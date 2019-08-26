@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
-get_ipython().system('git status')
-
-
 # # TV Script Generation
 # 
 # In this project, you'll generate your own [Seinfeld](https://en.wikipedia.org/wiki/Seinfeld) TV scripts using RNNs.  You'll be using part of the [Seinfeld dataset](https://www.kaggle.com/thec03u5/seinfeld-chronicles#scripts.csv) of scripts from 9 seasons.  The Neural Network you'll build will generate a new ,"fake" TV script, based on patterns it recognizes in this training data.
@@ -155,7 +149,7 @@ helper.preprocess_and_save_data(data_dir, token_lookup, create_lookup_tables)
 # # Check Point
 # This is your first checkpoint. If you ever decide to come back to this notebook or have to restart the notebook, you can start from here. The preprocessed data has been saved to disk.
 
-# In[1]:
+# In[ ]:
 
 
 """
@@ -172,7 +166,7 @@ int_text, vocab_to_int, int_to_vocab, token_dict = helper.load_preprocess()
 # 
 # ### Check Access to GPU
 
-# In[2]:
+# In[ ]:
 
 
 """
@@ -221,7 +215,7 @@ if not train_on_gpu:
 # 6             # target
 # ```
 
-# In[3]:
+# In[ ]:
 
 
 from torch.utils.data import TensorDataset, DataLoader
@@ -288,7 +282,7 @@ def batch_data(words, sequence_length, batch_size):
 # 
 # You should also notice that the targets, sample_y, are the *next* value in the ordered test_text data. So, for an input sequence `[ 28,  29,  30,  31,  32]` that ends with the value `32`, the corresponding output should be `33`.
 
-# In[4]:
+# In[ ]:
 
 
 # test dataloader
@@ -329,7 +323,7 @@ print(sample_y)
 # out = output[:, -1]
 # ```
 
-# In[5]:
+# In[ ]:
 
 
 import torch.nn as nn
@@ -408,7 +402,7 @@ class RNN(nn.Module):
         
         if (train_on_gpu):
             hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda(),
-                  weight.new(self.n_layers, batch_size, self.n_hidden).zero_().cuda())
+                  weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda())
         else:
             hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_(),
                       weight.new(self.n_layers, batch_size, self.hidden_dim).zero_())
@@ -432,7 +426,7 @@ tests.test_rnn(RNN, train_on_gpu)
 # 
 # **If a GPU is available, you should move your data to that GPU device, here.**
 
-# In[7]:
+# In[ ]:
 
 
 def forward_back_prop(rnn, optimizer, criterion, inp, target, hidden):
@@ -451,14 +445,16 @@ def forward_back_prop(rnn, optimizer, criterion, inp, target, hidden):
     # move data to GPU, if available
     if (train_on_gpu):
         rnn.cuda()
-        
+    
+    h = tuple([each.data for each in hidden])
+    
     rnn.zero_grad()
     
     if train_on_gpu:
-        inp, target = inp.cuda(), target.cuda
+        inp, target = inp.cuda(), target.cuda()
     # Forward pass
     
-    output, h = rnn(inp, hidden)
+    output, h = rnn(inp, h)
     
     # perform backpropagation and optimization
     
@@ -468,7 +464,7 @@ def forward_back_prop(rnn, optimizer, criterion, inp, target, hidden):
     optimizer.step()
     
     # return the loss over a batch and the hidden state produced by our model
-    return loss.item(), hidden
+    return loss.item(), h
 
 # Note that these tests aren't completely extensive.
 # they are here to act as general checks on the expected outputs of your functions
@@ -505,7 +501,7 @@ def train_rnn(rnn, batch_size, optimizer, criterion, n_epochs, show_every_n_batc
         hidden = rnn.init_hidden(batch_size)
         
         for batch_i, (inputs, labels) in enumerate(train_loader, 1):
-            
+           
             # make sure you iterate over completely full batches, only
             n_batches = len(train_loader.dataset)//batch_size
             if(batch_i > n_batches):
@@ -547,9 +543,9 @@ def train_rnn(rnn, batch_size, optimizer, criterion, n_epochs, show_every_n_batc
 
 # Data params
 # Sequence Length
-sequence_length =   # of words in a sequence
+sequence_length =  10 # of words in a sequence
 # Batch Size
-batch_size = 
+batch_size = 128
 
 # data loader - do not change
 train_loader = batch_data(int_text, sequence_length, batch_size)
@@ -560,24 +556,24 @@ train_loader = batch_data(int_text, sequence_length, batch_size)
 
 # Training parameters
 # Number of Epochs
-num_epochs = 
+num_epochs = 10
 # Learning Rate
-learning_rate = 
+learning_rate = 0.001
 
 # Model parameters
 # Vocab size
-vocab_size = 
+vocab_size = len(vocab_to_int)
 # Output size
-output_size = 
+output_size = vocab_size
 # Embedding Dimension
-embedding_dim = 
+embedding_dim = 200
 # Hidden Dimension
-hidden_dim = 
+hidden_dim = 256
 # Number of RNN Layers
-n_layers = 
+n_layers = 2
 
 # Show stats for every n number of batches
-show_every_n_batches = 500
+show_every_n_batches = 100
 
 
 # ### Train
